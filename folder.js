@@ -16,9 +16,9 @@ function copyFolder(src, target, callback) {
     
     var doCopy = function () {
         fs.readdir(src, function (err, files) {
-            files = files.filter(function (f) { return !f.match(/^(\.git)/); });
+            files = files && files.filter(function (f) { return !f.match(/^(\.git)/); });
             
-            if (!files.length) {
+            if (!files || !files.length) {
                 callback();
                 return;
             }
@@ -33,16 +33,16 @@ function copyFolder(src, target, callback) {
             }
     
             files.forEach(function (file) {
-                fs.stat(combinePath(src, file), function (err, stats) {
+                fs.stat(path.join(src, file), function (err, stats) {
                     if (err) {
                         throw err;
                     }
                     
                     if (stats.isFile()) {
-                        copyFile(combinePath(src, file), combinePath(target, file), onFileCopied);
+                        copyFile(path.join(src, file), path.join(target, file), onFileCopied);
                     }
                     else if (stats.isDirectory()) {
-                        copyFolder(combinePath(src, file), combinePath(target, file), onFileCopied);
+                        copyFolder(path.join(src, file), path.join(target, file), onFileCopied);
                     }
                 });
             });
@@ -55,13 +55,18 @@ function mapAllFiles(dir, action, callback) {
     var output = [];
     
     fs.readdir(dir, function (err, files) {
-        files = files.filter(function (f) { return !f.match(/^(\.git)/); });
+        if (err) {
+            console.log("err", err, dir);
+        }
         
-        if (!files.length) {
+        files = files && files.filter(function (f) { return !f.match(/^(\.git)/); });
+            
+        if (!files || !files.length) {
             callback(output);
             return;
         }
-        
+                    
+            
         var fileIx = 0;
         function onFolderComplete(data) {
             fileIx += 1;
@@ -84,19 +89,21 @@ function mapAllFiles(dir, action, callback) {
         }
 
         files.forEach(function (file) {
-            fs.stat(combinePath(dir, file), function (err, stats) {
+            fs.stat(path.join(dir, file), function (err, stats) {
                 if (err) {
                     throw err;
                 }
                 
                 if (stats.isFile()) {
-                    action(combinePath(dir, file), function (res) {
-                        output.push(res);
+                    action(path.join(dir, file), stats, function (res) {
+                        if (res) {
+                            output.push(res);
+                        }
                         onFileComplete();
                     });
                 }
                 else if (stats.isDirectory()) {
-                    mapAllFiles(combinePath(dir, file), action, onFolderComplete, output);
+                    mapAllFiles(path.join(dir, file), action, onFolderComplete, output);
                 }
             });
         });
@@ -104,17 +111,6 @@ function mapAllFiles(dir, action, callback) {
     });    
 }
 
-function combinePath() {
-    var parts = [];
-    
-    for (var ix = 0; ix < arguments.length; ix++) {
-        var part = arguments[ix];
-        
-        parts.push(part.replace(/\/$/, ""));
-    }
-    
-    return parts.join("/");
-}
 
 // copy a simple file
 function copyFile(src, target, callback) {

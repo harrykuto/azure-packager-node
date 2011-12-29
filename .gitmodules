@@ -1,0 +1,3 @@
+[submodule "azure-node-basepackage"]
+    path = azure-node-basepackage
+	url = https://github.com/janjongboom/azure-node-basepackage.git
