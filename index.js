@@ -8,7 +8,7 @@ var crypto = require("crypto");
 
 module.exports = function (application, target, callback) {
     // copy all the base files to a temp folder
-    folder.copy("./azure-node-basepackage", target, function () {                
+    folder.copy(__dirname + "/azure-node-basepackage", target, function () {      
         // this is the webrole folder
         var webRole = path.normalize(path.join(target, "WebRole1_778722b2-eb95-476d-af6a-917f269a0814.cssx")).replace(/\/$/, "");
             
@@ -77,6 +77,7 @@ function editManifest(root, manifestDirectory, manifest, callback) {
         domjs.parse(body, function(err, dom) {
             if (err) {
                 console.log("ERROR", err);
+                return;
             }
             
             var node = dom.children.filter(function (c) { return c.name === "Contents"; })[0];
