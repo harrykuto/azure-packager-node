@@ -13,7 +13,7 @@ module.exports = function (application, target, callback) {
         var webRole = path.normalize(path.join(target, "WebRole1_778722b2-eb95-476d-af6a-917f269a0814.cssx")).replace(/\/$/, "");
             
         // prepare the webrole
-        // in this process the folder will be replaced by a zip file
+        // in this process the folder will be replaced by a zip file 
         prepareWebRole (application, webRole, function () {
             // now we can prepare the new manifest file
             editManifest(target, target, "849d589c-82f8-4c56-878c-e6953c60996e.csman", function () {
