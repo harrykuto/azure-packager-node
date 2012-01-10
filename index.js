@@ -11,15 +11,18 @@ module.exports = function (application, target, callback) {
     folder.copy(__dirname + "/azure-node-basepackage", target, function () {      
         // this is the webrole folder
         var webRole = path.normalize(path.join(target, "WebRole1_778722b2-eb95-476d-af6a-917f269a0814.cssx")).replace(/\/$/, "");
-            
+
         // prepare the webrole
-        // in this process the folder will be replaced by a zip file 
+        // in this process the folder will be replaced by a zip file
         prepareWebRole (application, webRole, function () {
-            // now we can prepare the new manifest file
-            editManifest(target, target, "849d589c-82f8-4c56-878c-e6953c60996e.csman", function () {
-                zipUpAFolder(target, function () {
-                    fs.rename(target, target + ".cspkg", function () {
-                        callback(target + ".cspkg");
+            // prepare the service definition folder
+            prepareSdPackage (application, path.join(target, "SDPackage_26ebe4de-6f2f-4732-8ea8-e33abd7b3fe8.csdx"), function () {
+                // now we can prepare the new manifest file
+                editManifest(target, target, "849d589c-82f8-4c56-878c-e6953c60996e.csman", function () {
+                    zipUpAFolder(target, function () {
+                        fs.rename(target, target + ".cspkg", function () {
+                            callback(target + ".cspkg");
+                        });
                     });
                 });
             });
@@ -36,7 +39,27 @@ function prepareWebRole (application, webRole, onReady) {
             zipUpAFolder(webRole, onReady);
         });
         
-    });    
+    });
+}
+
+function prepareSdPackage (application, target, onReady) {
+    // if we have a csdef file then copy that one
+    fs.readdir(application, function (err, files) {
+        files = files && files.filter(function (f) { return f.match(/\.csdef$/); });
+        
+        if (files.length) {
+            folder.copyFile(path.join(application, files[0]), path.join(target, files[0]), afterCopy);
+        }
+        else {
+            afterCopy();
+        }
+        
+        function afterCopy() {
+            editManifest(target, target, "4ee6e124-f6ca-4d51-baea-64f3f88fc4b1.csman", function () {
+                zipUpAFolder(target, onReady);
+            });
+        }
+    });
 }
 
 function zipUpAFolder (dir, onReady) {

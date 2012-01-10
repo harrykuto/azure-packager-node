@@ -161,4 +161,4 @@ function rmrf(dir, callback) {
     });
 }
 
-module.exports = { copy: copyFolder, remove: rmrf, mapAllFiles: mapAllFiles };
+module.exports = { copy: copyFolder, remove: rmrf, mapAllFiles: mapAllFiles, copyFile: copyFile };
