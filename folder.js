@@ -1,4 +1,4 @@
-var fs = require("./throttlefs");
+var fs = require("node-native-zip/throttle-fs");
 var path = require("path");
 
 /**
@@ -78,7 +78,11 @@ function mapAllFiles(dir, action, callback) {
         var fileErr = null, dirErr = null;
         
         function onFolderComplete(err, data) {
-            if (err) dirErr = err;
+            if (err) { 
+                dirErr = err;
+                console.log("dirErr", err);
+                process.exit(0);
+            }
             
             fileIx += 1;
             
@@ -92,13 +96,17 @@ function mapAllFiles(dir, action, callback) {
         }
         
         function onFileComplete(err) {
-            if (err) fileErr = err;
+            if (err) { 
+                fileErr = err;
+                console.log("fileErr", err);
+                process.exit(0);
+            }
             
             fileIx += 1;
                         
             if (fileIx === files.length) {
                 return callback(fileErr, output);
-            }            
+            }
         }
 
         files.forEach(function (file) {
@@ -127,14 +135,20 @@ function mapAllFiles(dir, action, callback) {
  * Copy one file
  */
 function copyFile(src, target, callback) {
-    var srcFile = fs.createReadStream(src);
-    var targetFile = fs.createWriteStream(target);
-    
-    targetFile.on("close", function () {
-        callback(null, src);        
-    });
-    
-    srcFile.pipe(targetFile);
+    // is there a native copyFile available? use that, otherwise do it ourselves
+    if (fs.copyFile) {
+        fs.copyFile(src, target, callback);
+    }
+    else {
+        var srcFile = fs.createReadStream(src);
+        var targetFile = fs.createWriteStream(target);
+        
+        targetFile.on("close", function () {
+            callback(null, src);        
+        });
+        
+        srcFile.pipe(targetFile);
+    }
 }
 
 /**

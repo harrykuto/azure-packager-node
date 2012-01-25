@@ -1,4 +1,4 @@
-var fs = require("fs");
+var fs = require("node-native-zip/throttle-fs");
 var zip = require("node-native-zip");
 var folder = require("./folder");
 var util = require("util");
