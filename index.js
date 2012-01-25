@@ -6,22 +6,31 @@ var path = require("path");
 var DomJS = require("dom-js").DomJS;
 var crypto = require("crypto");
 
+/**
+ * Azure packager for node.js
+ */
 module.exports = function (application, target, callback) {
     // copy all the base files to a temp folder
-    folder.copy(__dirname + "/azure-node-basepackage", target, function () {      
+    folder.copy(__dirname + "/azure-node-basepackage", target, function (err) {
+        if (err) return callback(err);
+        
         // this is the webrole folder
         var webRole = path.normalize(path.join(target, "WebRole1_778722b2-eb95-476d-af6a-917f269a0814.cssx")).replace(/\/$/, "");
 
         // prepare the webrole
         // in this process the folder will be replaced by a zip file
-        prepareWebRole (application, webRole, function () {
+        prepareWebRole (application, webRole, function (err) {
+            if (err) return callback(err);
+            
             // prepare the service definition folder
-            prepareSdPackage (application, path.join(target, "SDPackage_26ebe4de-6f2f-4732-8ea8-e33abd7b3fe8.csdx"), function () {
+            prepareSdPackage (application, path.join(target, "SDPackage_26ebe4de-6f2f-4732-8ea8-e33abd7b3fe8.csdx"), function (err) {
+                if (err) return callback(err);
+                
                 // now we can prepare the new manifest file
                 editManifest(target, target, "849d589c-82f8-4c56-878c-e6953c60996e.csman", function () {
                     zipUpAFolder(target, function () {
                         fs.rename(target, target + ".cspkg", function () {
-                            callback(target + ".cspkg");
+                            callback(null, target + ".cspkg");
                         });
                     });
                 });
@@ -30,21 +39,33 @@ module.exports = function (application, target, callback) {
     });
 };
 
-function prepareWebRole (application, webRole, onReady) {
+/**
+ * Function to copy the web role folder, combines base package and application folder
+ */
+function prepareWebRole (application, webRole, callback) {
     // copy the approot to the package
-    folder.copy(application, path.join(webRole, "approot"), function () {
+    folder.copy(application, path.join(webRole, "approot"), function (err) {
+        if (err) return callback(err);
+        
         // update the manifest file
-        editManifest(webRole, path.join(webRole, "approot"), "39e5cb39-cd18-4e1a-9c25-72bd1ad41b49.csman", function () {
+        editManifest(webRole, path.join(webRole, "approot"), "39e5cb39-cd18-4e1a-9c25-72bd1ad41b49.csman", function (err) {
+            if (err) return callback(err);
+            
             // create a zip file
-            zipUpAFolder(webRole, onReady);
+            zipUpAFolder(webRole, callback);
         });
         
     });
 }
 
-function prepareSdPackage (application, target, onReady) {
+/**
+ * Copies the SDPackage directory, and takes a .csdef file from the root of the app folder if found
+ */
+function prepareSdPackage (application, target, callback) {
     // if we have a csdef file then copy that one
     fs.readdir(application, function (err, files) {
+        if (err) return callback(err);
+        
         files = files && files.filter(function (f) { return f.match(/\.csdef$/); });
         
         if (files.length) {
@@ -55,14 +76,19 @@ function prepareSdPackage (application, target, onReady) {
         }
         
         function afterCopy() {
-            editManifest(target, target, "4ee6e124-f6ca-4d51-baea-64f3f88fc4b1.csman", function () {
-                zipUpAFolder(target, onReady);
+            editManifest(target, target, "4ee6e124-f6ca-4d51-baea-64f3f88fc4b1.csman", function (err) {
+                if (err) return callback(err);
+                
+                zipUpAFolder(target, callback);
             });
         }
     });
 }
 
-function zipUpAFolder (dir, onReady) {
+/**
+ * Take a folder and zip it's content (incl. sub directories)
+ */
+function zipUpAFolder (dir, callback) {
     dir = path.normalize(dir).replace(/\/$/, "");
     
     var archive = new zip();
@@ -74,16 +100,26 @@ function zipUpAFolder (dir, onReady) {
             name: path.replace(dir, "").substr(1), 
             path: path 
         });
-    }, function (data) {
+    }, function (err, data) {
+        if (err) return callback(err);
+        
         // add the files to the zip
-        archive.addFiles(data, function () {
+        archive.addFiles(data, function (err) {
+            if (err) return callback(err);
+            
             // write the zip file
-            fs.writeFile(dir + ".zip", archive.toBuffer(), function () {
+            fs.writeFile(dir + ".zip", archive.toBuffer(), function (err) {
+                if (err) return callback(err);
+                
                 // remove original folder
-                folder.remove(dir, function () {
+                folder.remove(dir, function (err) {
+                    if (err) return callback(err);
+                    
                     // rename zip file
-                    fs.rename(dir + ".zip", dir, function () {
-                        onReady();
+                    fs.rename(dir + ".zip", dir, function (err) {
+                        if (err) return callback(err);
+                        
+                        callback(null);
                     });
                 });
             });                    
@@ -91,23 +127,27 @@ function zipUpAFolder (dir, onReady) {
     });    
 }
 
+/**
+ * Create a manifest file for a given directory, calculates hashes and creates XML file
+ */
 function editManifest(root, manifestDirectory, manifest, callback) {
     root = path.normalize(root).replace(/\/$/, "");
     
     fs.readFile(path.join(root, manifest), "ascii", function (err, body) {
+        if (err) return callback(err);
+        
         var domjs = new DomJS();
         
         domjs.parse(body, function(err, dom) {
             if (err) {
-                console.log("ERROR", err);
-                return;
+                return callback(err);
             }
             
             var node = dom.children.filter(function (c) { return c.name === "Contents"; })[0];
             
             var allFiles = [];
             
-            folder.mapAllFiles(root, function (f, stats, callback) {
+            folder.mapAllFiles(root, function (f, stats, filecallback) {
                 var isManifestFile = path.normalize(f) === path.normalize(path.join(root, manifest));
                 var isRelFile = !!f.match(/\.rels$/);
                 
@@ -115,35 +155,38 @@ function editManifest(root, manifestDirectory, manifest, callback) {
                     allFiles.push(f);
                     
                     getHash(f, function (hash) {
-                        callback({
+                        filecallback({
                             name: f.replace(root, "").replace(/\//g, "\\"),
                             hash: hash.toString(),
                             uri: f.replace(root, "")
-                            /*,
-                            created: (Date.parse(stats.ctime) * 1000).toString(),
-                            modified: (Date.parse(stats.mtime) * 1000).toString()
-                            */
                         });
                     });
                 }
                 else {
                     // is this the manifest file, then ignore
-                    callback(null);
+                    filecallback(null);
                 }
-            }, function (data) {
+            }, function (err, data) {
+                if (err) return callback(err);
+                
                 data.forEach(function (d) {
                     var ele = new Element("Item", d, []);
                     node.children.push(ele);
                 });
                 
-                fs.writeFile(path.join(root, manifest), new Buffer(dom.toXml(), "ascii"), function () {
-                    callback(allFiles);
+                fs.writeFile(path.join(root, manifest), new Buffer(dom.toXml(), "ascii"), function (err) {
+                    if (err) return callback(err);
+                    
+                    callback(null, allFiles);
                 });
             });
         });        
     });
 }
 
+/**
+ * Get SHA256 hash for a file
+ */
 function getHash(filename, callback) { 
     var shasum = crypto.createHash('sha256');
      
