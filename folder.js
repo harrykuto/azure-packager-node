@@ -1,4 +1,4 @@
-var fs = require("fs");
+var fs = require("./throttlefs");
 var path = require("path");
 
 /**
