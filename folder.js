@@ -80,8 +80,6 @@ function mapAllFiles(dir, action, callback) {
         function onFolderComplete(err, data) {
             if (err) { 
                 dirErr = err;
-                console.log("dirErr", err);
-                process.exit(0);
             }
             
             fileIx += 1;
@@ -98,8 +96,6 @@ function mapAllFiles(dir, action, callback) {
         function onFileComplete(err) {
             if (err) { 
                 fileErr = err;
-                console.log("fileErr", err);
-                process.exit(0);
             }
             
             fileIx += 1;
