@@ -6,6 +6,14 @@ var path = require("path");
 var DomJS = require("dom-js").DomJS;
 var crypto = require("crypto");
 
+var filenames = {
+    webRole: "WebRole1_71a027ab-5445-482c-9ecc-f6f6271ef758.cssx",
+    sdPackage: "SDPackage_953412aa-285b-404c-9c4f-d9a4fe74abcb.csdx",
+    rootManifest: "dc37b4fa-2729-417f-91af-50d9e7dc322a.csman",
+    webRoleManifest: "f4d4bb36-c975-4596-b905-c249d1fd64dc.csman",
+    sdPackageManifest: "3cf390f0-b33f-4a90-94a4-b2a289893c31.csman"
+}
+
 /**
  * Azure packager for node.js
  */
@@ -15,7 +23,7 @@ module.exports = function (application, target, callback) {
         if (err) return callback(err);
         
         // this is the webrole folder
-        var webRole = path.normalize(path.join(target, "WebRole1_778722b2-eb95-476d-af6a-917f269a0814.cssx")).replace(/\/$/, "");
+        var webRole = path.normalize(path.join(target, filenames.webRole)).replace(/\/$/, "");
 
         // prepare the webrole
         // in this process the folder will be replaced by a zip file
@@ -23,11 +31,11 @@ module.exports = function (application, target, callback) {
             if (err) return callback(err);
             
             // prepare the service definition folder
-            prepareSdPackage (application, path.join(target, "SDPackage_26ebe4de-6f2f-4732-8ea8-e33abd7b3fe8.csdx"), function (err) {
+            prepareSdPackage (application, path.join(target, filenames.sdPackage), function (err) {
                 if (err) return callback(err);
                 
                 // now we can prepare the new manifest file
-                editManifest(target, target, "849d589c-82f8-4c56-878c-e6953c60996e.csman", function () {
+                editManifest(target, target, filenames.rootManifest, function () {
                     zipUpAFolder(target, function () {
                         fs.rename(target, target + ".cspkg", function () {
                             callback(null, target + ".cspkg");
@@ -48,7 +56,7 @@ function prepareWebRole (application, webRole, callback) {
         if (err) return callback(err);
         
         // update the manifest file
-        editManifest(webRole, path.join(webRole, "approot"), "39e5cb39-cd18-4e1a-9c25-72bd1ad41b49.csman", function (err) {
+        editManifest(webRole, path.join(webRole, "approot"), filenames.webRoleManifest, function (err) {
             if (err) return callback(err);
             
             // create a zip file
@@ -76,7 +84,7 @@ function prepareSdPackage (application, target, callback) {
         }
         
         function afterCopy() {
-            editManifest(target, target, "4ee6e124-f6ca-4d51-baea-64f3f88fc4b1.csman", function (err) {
+            editManifest(target, target, filenames.sdPackageManifest, function (err) {
                 if (err) return callback(err);
                 
                 zipUpAFolder(target, callback);
