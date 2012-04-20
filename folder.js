@@ -1,4 +1,4 @@
-var fs = require("node-native-zip/throttle-fs");
+var fs = require("./throttle-fs");
 var path = require("path");
 
 /**

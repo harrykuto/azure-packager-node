@@ -1,9 +1,11 @@
-var fs = require("node-native-zip/throttle-fs");
-var zip = require("node-native-zip");
+var fs = require("./throttle-fs");
+var zip = require("./zip");
 var folder = require("./folder");
 var util = require("util");
 var path = require("path");
-var DomJS = require("dom-js").DomJS;
+
+var DomJSLib = require("dom-js");
+var DomJS = DomJSLib.DomJS;
 var crypto = require("crypto");
 
 var filenames = {
@@ -99,40 +101,21 @@ function prepareSdPackage (application, target, callback) {
 function zipUpAFolder (dir, callback) {
     dir = path.normalize(dir).replace(/\/$/, "");
     
-    var archive = new zip();
-            
-    // map all files in the approot thru this function
-    folder.mapAllFiles(dir, function (path, stats, callback) {
-        // prepare for the .addFiles function
-        callback({ 
-            name: path.replace(dir, "").substr(1), 
-            path: path 
-        });
-    }, function (err, data) {
+    zip.zipUpAFolder(dir + ".zip", dir, function (err, file) {
         if (err) return callback(err);
         
-        // add the files to the zip
-        archive.addFiles(data, function (err) {
+        // remove original folder
+        folder.remove(dir, function (err) {
             if (err) return callback(err);
             
-            // write the zip file
-            fs.writeFile(dir + ".zip", archive.toBuffer(), function (err) {
+            // rename zip file
+            fs.rename(dir + ".zip", dir, function (err) {
                 if (err) return callback(err);
                 
-                // remove original folder
-                folder.remove(dir, function (err) {
-                    if (err) return callback(err);
-                    
-                    // rename zip file
-                    fs.rename(dir + ".zip", dir, function (err) {
-                        if (err) return callback(err);
-                        
-                        callback(null);
-                    });
-                });
-            });                    
+                callback(null);
+            });
         });
-    });    
+    });
 }
 
 /**
@@ -178,7 +161,7 @@ function editManifest(root, manifestDirectory, manifest, callback) {
                 if (err) return callback(err);
                 
                 data.forEach(function (d) {
-                    var ele = new Element("Item", d, []);
+                    var ele = new DomJSLib.Element("Item", d, []);
                     node.children.push(ele);
                 });
                 
