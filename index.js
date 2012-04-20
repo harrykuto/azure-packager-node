@@ -3,7 +3,8 @@ var zip = require("node-native-zip");
 var folder = require("./folder");
 var util = require("util");
 var path = require("path");
-var DomJS = require("dom-js").DomJS;
+var DomJSLib = require("dom-js");
+var DomJS = DomJSLib.DomJS;
 var crypto = require("crypto");
 
 var filenames = {
@@ -178,7 +179,7 @@ function editManifest(root, manifestDirectory, manifest, callback) {
                 if (err) return callback(err);
                 
                 data.forEach(function (d) {
-                    var ele = new Element("Item", d, []);
+                    var ele = new DomJSLib.Element("Item", d, []);
                     node.children.push(ele);
                 });
                 
