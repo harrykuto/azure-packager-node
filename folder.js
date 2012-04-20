@@ -1,7 +1,10 @@
 var exec = require("child_process").exec;
 
+var NativeFs = require("fs");
 var fs = require("./throttle-fs");
 var path = require("path");
+var async = require("async");
+
 // cp -r . ../jaja
 /**
  * Copy the content of a folder and all it's subfolder to a new folder
@@ -30,70 +33,49 @@ function copyFolder(src, target, callback) {
  * @param action {Function} Mapping function in the form of (path, stats, callback), where callback is Function(result)
  * @param callback {Function} Callback fired after all files have been processed with (err, aggregatedResults)
  */
-function mapAllFiles(dir, action, callback) {
+function mapAllFiles(dir, action, callback, concurrency) {
     var output = [];
     
-    fs.readdir(dir, function (err, files) {
-        if (err) return callback(err);
-        
-        files = files && files.filter(function (f) { return !f.match(/^(\.git)/); });
+    // create a queue object with concurrency 2
+    var q = async.queue(function (filename, next) {
+        NativeFs.stat(filename, function (err, stats) {
+            if (err) return next(err);
             
-        if (!files || !files.length) {
-            return callback(null, output);
-        }
+            if (stats.isDirectory()) {
+                readFolder(filename, next);
+            }
+            else {
+                action(filename, stats, function (res) {
+                    if (res) {
+                        output.push(res);
+                    }
                     
-            
-        var fileIx = 0;
-        var fileErr = null, dirErr = null;
-        
-        function onFolderComplete(err, data) {
-            if (err) { 
-                dirErr = err;
+                    next();
+                });                
             }
-            
-            fileIx += 1;
-            
-            if (data) {
-                data.forEach(function (d) { output.push(d); });
-            }
-            
-            if (fileIx === files.length) {
-                return callback(dirErr, output);
-            }
-        }
-        
-        function onFileComplete(err) {
-            if (err) { 
-                fileErr = err;
-            }
-            
-            fileIx += 1;
-                        
-            if (fileIx === files.length) {
-                return callback(fileErr, output);
-            }
-        }
-
-        files.forEach(function (file) {
-            fs.stat(path.join(dir, file), function (err, stats) {
-                if (err) return onFileComplete(err);
-                
-                if (stats.isFile()) {
-                    action(path.join(dir, file), stats, function (res) {
-                        if (res) {
-                            output.push(res);
-                        }
-                        onFileComplete(null);
-                    });
-                }
-                else if (stats.isDirectory()) {
-                    mapAllFiles(path.join(dir, file), action, onFolderComplete, output);
-                }
-            });
         });
-        
-    });    
-}
+    }, concurrency || 5);
+    
+    // read folder and push stuff to queue
+    function readFolder (dir, next) {
+        NativeFs.readdir(dir, function (err, files) {
+            if (err) return next(err);
+            
+            q.push(files.map(function (file) {
+                return path.join(dir, file);
+            }));
+            
+            next();
+        });
+    };
+    
+    readFolder(dir, function () {
+        // on drain we're done
+        q.drain = function (err) {
+            callback(err, output);
+        };
+    });
+};
 
 
 /**

@@ -146,13 +146,11 @@ function editManifest(root, manifestDirectory, manifest, callback) {
                 if (!isManifestFile && !isRelFile) {
                     allFiles.push(f);
                     
-                    process.nextTick(function () {
-                        getHash(f, function (hash) {
-                            filecallback({
-                                name: f.replace(root, "").replace(/\//g, "\\"),
-                                hash: hash.toString(),
-                                uri: f.replace(root, "")
-                            });
+                    getHash(f, function (hash) {
+                        filecallback({
+                            name: f.replace(root, "").replace(/\//g, "\\"),
+                            hash: hash.toString(),
+                            uri: f.replace(root, "")
                         });
                     });
                 }
@@ -173,7 +171,7 @@ function editManifest(root, manifestDirectory, manifest, callback) {
                     
                     callback(null, allFiles);
                 });
-            });
+            }, 1);
         });        
     });
 }
@@ -181,7 +179,7 @@ function editManifest(root, manifestDirectory, manifest, callback) {
 /**
  * Get SHA256 hash for a file
  */
-function getHash(filename, callback) { 
+function getHash(filename, callback) {
     filename = path.resolve(filename);    
     
     var commands = [
@@ -189,6 +187,8 @@ function getHash(filename, callback) {
     ];
     
     var command = commands.join("; ");
+    
+    console.log("getHash");
     
     exec(command, function (err, stdout, stderr) {
         var shaMatch = stdout.trim().match(/\w+$/);
