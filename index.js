@@ -3,6 +3,7 @@ var zip = require("./zip");
 var folder = require("./folder");
 var util = require("util");
 var path = require("path");
+var exec = require("child_process").exec;
 
 var DomJSLib = require("dom-js");
 var DomJS = DomJSLib.DomJS;
@@ -37,7 +38,7 @@ module.exports = function (application, target, callback) {
                 if (err) return callback(err);
                 
                 // now we can prepare the new manifest file
-                editManifest(target, target, filenames.rootManifest, function () {
+                editManifest(target, target, filenames.rootManifest, function () {              
                     zipUpAFolder(target, function () {
                         fs.rename(target, target + ".cspkg", function () {
                             callback(null, target + ".cspkg");
@@ -60,7 +61,7 @@ function prepareWebRole (application, webRole, callback) {
         // update the manifest file
         editManifest(webRole, path.join(webRole, "approot"), filenames.webRoleManifest, function (err) {
             if (err) return callback(err);
-            
+
             // create a zip file
             zipUpAFolder(webRole, callback);
         });
@@ -145,11 +146,13 @@ function editManifest(root, manifestDirectory, manifest, callback) {
                 if (!isManifestFile && !isRelFile) {
                     allFiles.push(f);
                     
-                    getHash(f, function (hash) {
-                        filecallback({
-                            name: f.replace(root, "").replace(/\//g, "\\"),
-                            hash: hash.toString(),
-                            uri: f.replace(root, "")
+                    process.nextTick(function () {
+                        getHash(f, function (hash) {
+                            filecallback({
+                                name: f.replace(root, "").replace(/\//g, "\\"),
+                                hash: hash.toString(),
+                                uri: f.replace(root, "")
+                            });
                         });
                     });
                 }
@@ -179,15 +182,17 @@ function editManifest(root, manifestDirectory, manifest, callback) {
  * Get SHA256 hash for a file
  */
 function getHash(filename, callback) { 
-    var shasum = crypto.createHash('sha256');
-     
-    var s = fs.ReadStream(filename);
-    s.on('data', function(d) {
-        shasum.update(d);
-    });
-     
-    s.on('end', function() {
-        var d = shasum.digest('hex').toUpperCase();
-        callback(d);
+    filename = path.resolve(filename);    
+    
+    var commands = [
+        'openssl dgst -sha256 "' + filename + '" .'
+    ];
+    
+    var command = commands.join("; ");
+    
+    exec(command, function (err, stdout, stderr) {
+        var shaMatch = stdout.trim().match(/\w+$/);
+        
+        callback(shaMatch && shaMatch[0]);
     });
 }

@@ -1,58 +1,27 @@
+var exec = require("child_process").exec;
+
 var fs = require("./throttle-fs");
 var path = require("path");
-
+// cp -r . ../jaja
 /**
  * Copy the content of a folder and all it's subfolder to a new folder
  */
 function copyFolder(src, target, callback) {
-    path.exists(target, function (exists) {
-        if (!exists) {
-            fs.mkdir(target, 04777, function (err) {
-                if (err) return callback(err);
-                
-                doCopy();
-            });
-        }
-        else {
-            doCopy();
-        }
+    src = path.resolve(src);
+    target = path.resolve(target);
+    
+    var commands = [
+        'cd "' + src + '"',
+        'cp -r . "' + target + '"'
+    ];
+    
+    var command = commands.join("; ");
+    
+    exec(command, function (err, stdout, stderr) {
+        if (err || stderr) return callback(err || stderr);
+        
+        callback(null);
     });
-    
-    var doCopy = function () {
-        fs.readdir(src, function (err, files) {
-            if (err) return callback(err);
-            
-            files = files && files.filter(function (f) { return !f.match(/^(\.git)/); });
-            
-            if (!files || !files.length) {
-                callback(null);
-                return;
-            }
-            
-            var fileIx = 0;
-            function onFileCopied() {
-                fileIx += 1;
-                
-                if (fileIx === files.length) {
-                    callback(null, src);
-                }
-            }
-    
-            files.forEach(function (file) {
-                fs.stat(path.join(src, file), function (err, stats) {
-                    if (err) return callback(err);
-                    
-                    if (stats.isFile()) {
-                        copyFile(path.join(src, file), path.join(target, file), onFileCopied);
-                    }
-                    else if (stats.isDirectory()) {
-                        copyFolder(path.join(src, file), path.join(target, file), onFileCopied);
-                    }
-                });
-            });
-            
-        });
-    };
 }
 
 /**
