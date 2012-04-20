@@ -188,8 +188,6 @@ function getHash(filename, callback) {
     
     var command = commands.join("; ");
     
-    console.log("getHash");
-    
     exec(command, function (err, stdout, stderr) {
         var shaMatch = stdout.trim().match(/\w+$/);
         
