@@ -13,14 +13,9 @@ function copyFolder(src, target, callback) {
     src = path.resolve(src);
     target = path.resolve(target);
     
-    var commands = [
-        'cd "' + src + '"',
-        'cp -r . "' + target + '"'
-    ];
+    var command = 'cp -r . "' + target + '"';
     
-    var command = commands.join("; ");
-    
-    exec(command, function (err, stdout, stderr) {
+    exec(command, {cwd: src}, function (err, stdout, stderr) {
         if (err || stderr) return callback(err || stderr);
         
         callback(null);
