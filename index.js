@@ -38,7 +38,7 @@ module.exports = function (application, target, callback) {
                 if (err) return callback(err);
                 
                 // now we can prepare the new manifest file
-                editManifest(target, target, filenames.rootManifest, function () {              
+                editManifest(target, target, filenames.rootManifest, function () {
                     zipUpAFolder(target, function () {
                         fs.rename(target, target + ".cspkg", function () {
                             callback(null, target + ".cspkg");
@@ -61,7 +61,7 @@ function prepareWebRole (application, webRole, callback) {
         // update the manifest file
         editManifest(webRole, path.join(webRole, "approot"), filenames.webRoleManifest, function (err) {
             if (err) return callback(err);
-
+            
             // create a zip file
             zipUpAFolder(webRole, callback);
         });
@@ -103,20 +103,20 @@ function zipUpAFolder (dir, callback) {
     dir = path.normalize(dir).replace(/\/$/, "");
     
     zip.zipUpAFolder(dir + ".zip", dir, function (err, file) {
-        if (err) return callback(err);
-        
-        // remove original folder
-        folder.remove(dir, function (err) {
-            if (err) return callback(err);
-            
-            // rename zip file
-            fs.rename(dir + ".zip", dir, function (err) {
                 if (err) return callback(err);
                 
-                callback(null);
-            });
-        });
-    });
+                // remove original folder
+                folder.remove(dir, function (err) {
+                    if (err) return callback(err);
+                    
+                    // rename zip file
+                    fs.rename(dir + ".zip", dir, function (err) {
+                        if (err) return callback(err);
+                        
+                        callback(null);
+                    });
+                });
+            });                    
 }
 
 /**
@@ -172,20 +172,20 @@ function editManifest(root, manifestDirectory, manifest, callback) {
                     callback(null, allFiles);
                 });
             }, 1);
+            });
         });        
-    });
 }
 
 /**
  * Get SHA256 hash for a file
  */
-function getHash(filename, callback) {
+function getHash(filename, callback) { 
     filename = path.resolve(filename);    
-    
+     
     var commands = [
         'openssl dgst -sha256 "' + filename + '" .'
     ];
-    
+     
     var command = commands.join("; ");
     
     exec(command, function (err, stdout, stderr) {
