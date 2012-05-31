@@ -1,8 +1,10 @@
-var fs = require("node-native-zip/throttle-fs");
-var zip = require("node-native-zip");
+var fs = require("./throttle-fs");
+var zip = require("./zip");
 var folder = require("./folder");
 var util = require("util");
 var path = require("path");
+var exec = require("child_process").exec;
+
 var DomJSLib = require("dom-js");
 var DomJS = DomJSLib.DomJS;
 var crypto = require("crypto");
@@ -100,24 +102,7 @@ function prepareSdPackage (application, target, callback) {
 function zipUpAFolder (dir, callback) {
     dir = path.normalize(dir).replace(/\/$/, "");
     
-    var archive = new zip();
-            
-    // map all files in the approot thru this function
-    folder.mapAllFiles(dir, function (path, stats, callback) {
-        // prepare for the .addFiles function
-        callback({ 
-            name: path.replace(dir, "").substr(1), 
-            path: path 
-        });
-    }, function (err, data) {
-        if (err) return callback(err);
-        
-        // add the files to the zip
-        archive.addFiles(data, function (err) {
-            if (err) return callback(err);
-            
-            // write the zip file
-            fs.writeFile(dir + ".zip", archive.toBuffer(), function (err) {
+    zip.zipUpAFolder(dir + ".zip", dir, function (err, file) {
                 if (err) return callback(err);
                 
                 // remove original folder
@@ -132,8 +117,6 @@ function zipUpAFolder (dir, callback) {
                     });
                 });
             });                    
-        });
-    });    
 }
 
 /**
@@ -188,24 +171,26 @@ function editManifest(root, manifestDirectory, manifest, callback) {
                     
                     callback(null, allFiles);
                 });
+            }, 1);
             });
         });        
-    });
 }
 
 /**
  * Get SHA256 hash for a file
  */
 function getHash(filename, callback) { 
-    var shasum = crypto.createHash('sha256');
+    filename = path.resolve(filename);    
      
-    var s = fs.ReadStream(filename);
-    s.on('data', function(d) {
-        shasum.update(d);
-    });
+    var commands = [
+        'openssl dgst -sha256 "' + filename + '" .'
+    ];
      
-    s.on('end', function() {
-        var d = shasum.digest('hex').toUpperCase();
-        callback(d);
+    var command = commands.join("; ");
+    
+    exec(command, function (err, stdout, stderr) {
+        var shaMatch = stdout.trim().match(/\w+$/);
+        
+        callback(shaMatch && shaMatch[0]);
     });
 }
