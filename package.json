@@ -13,7 +13,9 @@
     "async": "~0.1.18"
   },
 
+  "pm": "sm",
+
   "mappings": {
-      "azure-node-basepackage": ["npm", "git://github.com/c9/azure-node-basepackage.git#86730fc056cfef18f58e001615944dc8898a8c67"]
+      "azure-node-basepackage": ["npm", "git://github.com/c9/azure-node-basepackage.git#13bc1ca35af71994982d7d05577b70d38a14165d"]
   }
 }
