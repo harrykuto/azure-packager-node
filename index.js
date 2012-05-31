@@ -22,7 +22,7 @@ var filenames = {
  */
 module.exports = function (application, target, callback) {
     // copy all the base files to a temp folder
-    folder.copy(__dirname + "/azure-node-basepackage", target, function (err) {
+    folder.copy(__dirname + "/node_modules/azure-node-basepackage", target, function (err) {
         if (err) return callback(err);
         
         // this is the webrole folder
@@ -102,21 +102,21 @@ function prepareSdPackage (application, target, callback) {
 function zipUpAFolder (dir, callback) {
     dir = path.normalize(dir).replace(/\/$/, "");
     
-    zip.zipUpAFolder(dir + ".zip", dir, function (err, file) {
+    zip.zipUpAFolder(dir + ".zip", dir, function(err, file) {
+        if (err) return callback(err);
+    
+        // remove original folder
+        folder.remove(dir, function(err) {
+            if (err) return callback(err);
+    
+            // rename zip file
+            fs.rename(dir + ".zip", dir, function(err) {
                 if (err) return callback(err);
-                
-                // remove original folder
-                folder.remove(dir, function (err) {
-                    if (err) return callback(err);
-                    
-                    // rename zip file
-                    fs.rename(dir + ".zip", dir, function (err) {
-                        if (err) return callback(err);
-                        
-                        callback(null);
-                    });
-                });
-            });                    
+    
+                callback(null);
+            });
+        });
+    });               
 }
 
 /**
