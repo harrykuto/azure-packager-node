@@ -1,6 +1,6 @@
 {
   "name":"azure-packager",
-  "version":"0.1.0",
+  "version":"0.1.1",
   "description": "Azure project packager",
   "author": "ajax.org B.V. <info@ajax.org>",
   "contributors": [
@@ -11,5 +11,9 @@
     "node-uuid": "~1.3.3",
     "dom-js": "~0.0.7",
     "async": "~0.1.18"
+  },
+
+  "mappings": {
+      "azure-node-basepackage": ["npm", "git://github.com/c9/azure-node-basepackage.git#86730fc056cfef18f58e001615944dc8898a8c67"]
   }
 }
