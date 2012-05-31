@@ -1,6 +1,0 @@
-[submodule "azure-node-basepackage"]
-    path = azure-node-basepackage
-	url = https://github.com/c9/azure-node-basepackage.git
-[submodule "node_modules/node-native-zip"]
-	path = node_modules/node-native-zip
-	url = git://github.com/janjongboom/node-native-zip.git
